@@ -24,6 +24,7 @@
 
 import logging
 import mimetypes
+import shutil
 
 from unmanic.libs.unplugins.settings import PluginSettings
 
@@ -36,6 +37,16 @@ class Settings(PluginSettings):
 
     def __init__(self, *args, **kwargs):
         super(Settings, self).__init__(*args, **kwargs)
+
+
+def dependencies_installed():
+    result = True
+    dep_list = ['jhead', 'jpegtran']
+    for dep in dep_list:
+        if not shutil.which(dep):
+            logger.error("Missing dependency '{}'. Please install this before running again.".format(dep))
+            result = False
+    return result
 
 
 def check_file_is_image(file_path):
@@ -134,6 +145,9 @@ def on_library_management_file_test(data):
     # Get the path to the file
     abspath = data.get('path')
 
+    if not dependencies_installed():
+        return
+
     if check_if_work_required(abspath):
         data['add_file_to_pending_tasks'] = True
         logger.debug("File '{}' should be added to task list. Rotation needs fixing.".format(abspath))
@@ -159,6 +173,9 @@ def on_worker_process(data):
     """
     # Get the path to the file
     abspath = data.get('file_in')
+
+    if not dependencies_installed():
+        return
 
     if check_if_work_required(abspath):
         data['exec_command'] = build_command(abspath)
